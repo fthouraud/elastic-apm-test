@@ -109,7 +109,7 @@ services:
     networks:
       - backend-network
     environment:
-      API_HEALTHCHECK_URL: http://sample-app-dev-1:8090/management/health
+      API_HEALTHCHECK_URL: http://sample-app-int-1:8090/management/health
     depends_on:
       - sample-app-2
 
