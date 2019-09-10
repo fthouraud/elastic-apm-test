@@ -1,0 +1,118 @@
+version: '3'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_SUITE_VERSION}
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - http.host=0.0.0.0
+      - transport.host=127.0.0.1
+    networks:
+      - backend-network
+    ports:
+      - 9200:9200
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${ELASTIC_SUITE_VERSION}
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    networks:
+      - backend-network
+    ports:
+      - 5601:5601
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:${ELASTIC_SUITE_VERSION}
+    container_name: logstash
+    environment:
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+    volumes:
+      - ./docker/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    networks:
+      - backend-network
+    ports:
+      - 5044:5044
+      - 4560:4560
+      - 9600:9600
+
+  elastic-apm-server:
+    image: docker.elastic.co/apm/apm-server:${ELASTIC_SUITE_VERSION}
+    container_name: elastic-apm-server
+    environment: 
+      - apm-server.host=0.0.0.0:8200
+    depends_on:
+      - elasticsearch
+    ports:
+      - 8200:8200
+    networks:
+      - backend-network
+
+  sample-app:
+    build:
+      context: .
+    depends_on:
+      - elastic-apm-server
+    container_name: sample-app-dev-1
+    ports:
+      - 8080:8080
+    networks:
+      - backend-network
+    environment:
+      LOGSTASH_HOST: logstash:4560
+      APM_SERVER_HOST: http://elastic-apm-server:8200
+      INFO_ENVIRONMENT: dev
+      INFO_CLASSIFIER: 1
+      ELASTICSEARCH_HOST: elasticsearch:9200
+      KIBANA_HOST: kibana:5601
+
+  sample-app-2:
+    build:
+      context: .
+    depends_on:
+      - elastic-apm-server
+    container_name: sample-app-int-1
+    ports:
+      - 8090:8080
+    networks:
+      - backend-network
+    environment:
+      LOGSTASH_HOST: logstash:4560
+      APM_SERVER_HOST: http://elastic-apm-server:8200
+      INFO_ENVIRONMENT: int
+      INFO_CLASSIFIER: 1
+      ELASTICSEARCH_HOST: elasticsearch:9200
+      KIBANA_HOST: kibana:5601
+
+  heartbeat:
+    image: docker.elastic.co/beats/heartbeat:${ELASTIC_SUITE_VERSION}
+    container_name: heartbeat
+    command: heartbeat --strict.perms=false -E output.elasticsearch.hosts=["elasticsearch:9200"] -e
+    volumes:
+      - "./docker/heartbeat.yml:/usr/share/heartbeat/heartbeat.yml:ro"
+    networks:
+      - backend-network
+    environment:
+      API_HEALTHCHECK_URL: http://sample-app-dev-1:8080/management/health
+    depends_on:
+      - sample-app
+
+  heartbeat-2:
+    image: docker.elastic.co/beats/heartbeat:${ELASTIC_SUITE_VERSION}
+    container_name: heartbeat-2
+    command: heartbeat --strict.perms=false -E output.elasticsearch.hosts=["elasticsearch:9200"] -e
+    volumes:
+      - "./docker/heartbeat.yml:/usr/share/heartbeat/heartbeat.yml:ro"
+    networks:
+      - backend-network
+    environment:
+      API_HEALTHCHECK_URL: http://sample-app-dev-1:8090/management/health
+    depends_on:
+      - sample-app-2
+
+networks:
+  backend-network:
+    driver: bridge

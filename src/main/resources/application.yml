@@ -1,0 +1,37 @@
+info:
+  environment: local
+  classifier: 0
+
+spring:
+  application:
+    name: sample-app-${info.environment}-${info.classifier}
+
+  datasource:
+    url: 'jdbc:h2:mem:sample_app'
+    driverClassName: org.h2.Driver
+    username: sample_app
+    password: sample_app
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  security:
+    user:
+      password: ekino
+      roles: [BASIC_USER]
+
+app:
+  api:
+    host: https://randomapi.com/api/ljbo9eac?key=SEDV-23DB-Z6M0-B8QW
+
+management:
+  endpoints:
+    web:
+      base-path: /management
+
+
+logging:
+  level:
+    root: INFO
+    com.ekino.fth: DEBUG

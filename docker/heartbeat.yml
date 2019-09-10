@@ -1,0 +1,15 @@
+heartbeat:
+  monitors:
+    - type: http
+      schedule: '@every 5s'
+      urls: ["${API_HEALTHCHECK_URL}"]
+      check:
+        request:
+          method: GET
+        response:
+          status: 200
+          json:
+            - description: check status is UP
+              condition:
+                equals:
+                  status: UP
