@@ -16,9 +16,9 @@ To build the project, simply run:
 ./gradlew build
 ```
 
-## Endpoints:
+## Endpoints
 
-It describes the base pathes of the application.
+It describes the base pathes of the application. By default, the application runs on port `8080`.
 
 ### Get all foos
 
@@ -36,7 +36,7 @@ This endpoint is secured and require an authorization header. The user is `user`
 
 You can add the header `Authorization` with value `Basic dXNlcjpla2lubw==`.
 
-# The Elastic stack
+# The Elastic stack
 
 ## Docker
 
